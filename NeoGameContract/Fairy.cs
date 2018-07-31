@@ -53,6 +53,16 @@ namespace NeoGameContract
         [DisplayName("useTicket")]
         public static event deleUseTicket UseTicketed;
 
+        //notify 购买元素
+        public delegate void deleBuyElement(byte[] owner, int amount1, int amount2, int amount3, int amount4, int amount5, int amount6, int amount7, int amount8, int amount9, int amount10);
+        [DisplayName("buyElement")]
+        public static event deleBuyElement BuyElemented;
+
+        //notify 使用元素
+        public delegate void deleUseElement(byte[] owner, int amount1, int amount2, int amount3, int amount4, int amount5, int amount6, int amount7, int amount8, int amount9, int amount10);
+        [DisplayName("useElement")]
+        public static event deleUseElement UseElemented;
+
         private const ulong TX_MIN_FEE = 5000000;
 
         [Serializable]
@@ -87,6 +97,7 @@ namespace NeoGameContract
             public BigInteger ticket5;
         }
 
+        [Serializable]
         public class TicketValue
         {
             public BigInteger arena;//竞技场门票
@@ -100,6 +111,7 @@ namespace NeoGameContract
             public BigInteger ticket5;
         }
 
+        [Serializable]
         public class ElementInfo
         {
             public byte[] owner;//拥有者
@@ -117,6 +129,7 @@ namespace NeoGameContract
             public BigInteger element5;
         }
 
+        [Serializable]
         public class ElementValue
         {
             public BigInteger thunder;//雷
@@ -131,7 +144,7 @@ namespace NeoGameContract
             public BigInteger element4;
             public BigInteger element5;
         }
-
+        [Serializable]
         public class TransferInfo
         {
             public byte[] from;
@@ -190,7 +203,7 @@ namespace NeoGameContract
                 if (method == "totalExchargeSgas") return TotalExchargeSgas();
                 if (method == "version") return Version();
                 if (method == "name") return Name();
-               
+              
                 if (method == "balanceOf")
                 {
                     //查询 游戏金币 对应 sgas
@@ -211,8 +224,7 @@ namespace NeoGameContract
                     if (args.Length != 2) return 0;
                     byte[] owner = (byte[])args[0];
                     byte[] txid = (byte[])args[1];
-                    //var tx = ExecutionEngine.ScriptContainer as Transaction;
-                    //byte[] txid = tx.Hash;
+
                     return RechargeToken(owner, txid);
                 }
                 if (method == "drawToken")
@@ -399,13 +411,70 @@ namespace NeoGameContract
                     int amount8 = (int)args[8];
                     return UseTicket(buyer, amount1, amount2, amount3, amount4, amount5, amount6, amount7, amount8);
                 }
+                if (method == "setElementValue")
+                {
+                    if (args.Length != 8) return 0;
+                    BigInteger value1 = (BigInteger)args[0];
+                    BigInteger value2 = (BigInteger)args[1];
+                    BigInteger value3 = (BigInteger)args[2];
+                    BigInteger value4 = (BigInteger)args[3];
+                    BigInteger value5 = (BigInteger)args[4];
+                    BigInteger value6 = (BigInteger)args[5];
+                    BigInteger value7 = (BigInteger)args[6];
+                    BigInteger value8 = (BigInteger)args[7];
+                    BigInteger value9 = (BigInteger)args[8];
+                    BigInteger value10 = (BigInteger)args[9];
+
+                    if (Runtime.CheckWitness(ContractOwner))
+                    {
+                        return SetElementValue(value1, value2, value3, value4, value5, value6, value7, value8, value9, value10);
+
+                    }
+                    return false;
+                }
+                if (method == "getElementValue")
+                {
+                    return GetElementValue();
+                }
+                if (method == "buyElement")
+                {
+                    if (args.Length != 11) return 0;
+                    byte[] buyer = (byte[])args[0];
+                    int amount1 = (int)args[1];
+                    int amount2 = (int)args[2];
+                    int amount3 = (int)args[3];
+                    int amount4 = (int)args[4];
+                    int amount5 = (int)args[5];
+                    int amount6 = (int)args[6];
+                    int amount7 = (int)args[7];
+                    int amount8 = (int)args[8];
+                    int amount9 = (int)args[9];
+                    int amount10 = (int)args[10];
+                    return BuyElement(buyer, amount1, amount2, amount3, amount4, amount5, amount6, amount7, amount8, amount9, amount10);
+                }
+                if (method == "useElement")
+                {
+                    if (args.Length != 11) return 0;
+                    byte[] buyer = (byte[])args[0];
+                    int amount1 = (int)args[1];
+                    int amount2 = (int)args[2];
+                    int amount3 = (int)args[3];
+                    int amount4 = (int)args[4];
+                    int amount5 = (int)args[5];
+                    int amount6 = (int)args[6];
+                    int amount7 = (int)args[7];
+                    int amount8 = (int)args[8];
+                    int amount9 = (int)args[9];
+                    int amount10 = (int)args[10];
+                    return UseElement(buyer, amount1, amount2, amount3, amount4, amount5, amount6, amount7, amount8, amount9, amount10);
+                }
 
             }
             return false;
         }
 
         /// <summary>
-        /// 不包含收取的手续费在内，所有用户转到合约的钱
+        /// 不包含收取的手续费在内，所有用户存在拍卖行中的代币
         /// </summary>
         /// <returns></returns>
         public static BigInteger TotalExchargeSgas()
@@ -466,14 +535,12 @@ namespace NeoGameContract
             byte[] txinfo = Storage.Get(Storage.CurrentContext, txid);
             if (txinfo.Length > 0)
             {
-                // 已经处理过了
                 return false;
             }
 
 
             // 查询交易记录
             object[] args = new object[1] { txid };
-
             object[] res = (object[])gasCall("getTXInfo", args);
 
             if (res.Length > 0)
@@ -538,8 +605,6 @@ namespace NeoGameContract
 
                 // 转账
                 object[] args = new object[3] { ExecutionEngine.ExecutingScriptHash, sender, count };
-                //byte[] sgasHash = Storage.Get(Storage.CurrentContext, "sgas");
-                //deleDyncall dyncall = (deleDyncall)sgasHash.ToDelegate();
                 bool res = (bool)gasCall("transfer_app", args);
                 if (!res)
                 {
@@ -619,9 +684,6 @@ namespace NeoGameContract
             result = (object[])Helper.Deserialize(v);
             TicketInfo info = (TicketInfo)(object)result;
             return info;
-
-
-
         }
 
         public static object[] GetElementInfoObject(byte[] owner)
@@ -665,7 +727,6 @@ namespace NeoGameContract
                 ticket4 = ticket4,
                 ticket5 = ticket5
             };
-
             byte[] bytesInfo = Helper.Serialize(info);
             Storage.Put(Storage.CurrentContext, new byte[] { 0x01 }.Concat(owner), bytesInfo);
             return true;
@@ -688,7 +749,7 @@ namespace NeoGameContract
                 element4 = element4,
                 element5 = element5
             };
-
+         
             byte[] bytesInfo = Helper.Serialize(info);
             Storage.Put(Storage.CurrentContext, new byte[] { 0x11 }.Concat(owner), bytesInfo);
             return true;
@@ -746,7 +807,6 @@ namespace NeoGameContract
             result = (object[])Helper.Deserialize(v);
             FairyInfo info = (FairyInfo)(object)result;
             return info;
-
         }
         private static object[] GetFairyInfoObject(BigInteger tokenId)
         {
@@ -761,7 +821,6 @@ namespace NeoGameContract
 
         
         //创建拍卖
-        
         public static bool CreateSale(byte[] tokenOwner, BigInteger tokenId, BigInteger price, int sellType)
         {
             if (tokenOwner.Length != 20)
@@ -780,13 +839,9 @@ namespace NeoGameContract
 
             if (price < TX_MIN_FEE)
             {
-                
                 return false;
             }
 
-            //if (Runtime.CheckWitness(tokenOwner))
-            // 物品放在拍卖行
-            //object[] args = new object[3] { tokenOwner, ExecutionEngine.ExecutingScriptHash, tokenId };
             bool res = TransferFairy(tokenOwner, ExecutionEngine.ExecutingScriptHash, tokenId);
             if (res)
             {
@@ -811,18 +866,14 @@ namespace NeoGameContract
             return false;
         }
 
-        
-        //从拍卖场购买,将钱划入合约，物品给买家
-        
+        //从拍卖场购买,将钱划入合约名下，将物品给买家
         public static bool BuySale(byte[] sender, BigInteger tokenId)
         {
             if (!Runtime.CheckWitness(sender))
             {
-                //没有签名
                 return false;
             }
 
-            //byte[] auctionId = new byte[] { 0x13 }.Concat(tokenId.AsByteArray());
             object[] objInfo = getAuctionInfo(tokenId.AsByteArray());
             if (objInfo.Length > 0)
             {
@@ -845,12 +896,10 @@ namespace NeoGameContract
 
                 if (senderMoney < curBuyPrice)
                 {
-                    // 钱不够
                     return false;
                 }
 
                 // 转移物品
-                //object[] args = new object[3] { ExecutionEngine.ExecutingScriptHash, sender, tokenId };
                 bool res = TransferFairy(ExecutionEngine.ExecutingScriptHash, sender, tokenId);
                 if (!res)
                 {
@@ -875,7 +924,6 @@ namespace NeoGameContract
                 Storage.Put(Storage.CurrentContext, owner, nMoney);
 
                 // 删除拍卖记录
-                
                 DeleteAuctionInfo(tokenId.AsByteArray());
 
                 // 成交记录
@@ -926,7 +974,6 @@ namespace NeoGameContract
 
             if (from != ownedBy)
             {
-                //Runtime.Log("Token is not owned by tx sender");
                 return false;
             }
 
@@ -943,9 +990,7 @@ namespace NeoGameContract
 
         }
 
-        /**
-         * 存储交易信息
-         */
+        //存储交易信息
         private static void setTxInfo(byte[] from, byte[] to, BigInteger value)
         {
 
@@ -961,7 +1006,6 @@ namespace NeoGameContract
             Storage.Put(Storage.CurrentContext, keytxid, txinfo);
         }
 
-
         //获取拍卖信息
         private static object[] getAuctionInfo(byte[] tokenId)
         {
@@ -972,7 +1016,6 @@ namespace NeoGameContract
             return (object[])Helper.Deserialize(v);
         }
 
-
         //存储拍卖成交记录
         private static void putAuctionRecord(byte[] tokenId, AuctionRecord info)
         {
@@ -982,7 +1025,6 @@ namespace NeoGameContract
             var key = new byte[] { 0x14 }.Concat(tokenId);
             Storage.Put(Storage.CurrentContext, key, txInfo);
         }
-
 
         //取消拍卖
         public static bool CancelSale(byte[] sender, BigInteger tokenId)
@@ -1005,7 +1047,7 @@ namespace NeoGameContract
                     if (res)
                     {
                         DeleteAuctionInfo(tokenId.AsByteArray());
-
+                        // notify
                         CancelAuctioned(tokenOwner, tokenId);
                         return true;
                     }
@@ -1020,7 +1062,6 @@ namespace NeoGameContract
             Storage.Delete(Storage.CurrentContext, auctionId);
         }
 
-
         //获取拍卖信息
         public static AuctionInfo GetAuctionInfo(BigInteger tokenId)
         {
@@ -1029,7 +1070,6 @@ namespace NeoGameContract
 
             return info;
         }
-
 
         //获取拍卖成交记录
         public static AuctionRecord GetAuctionRecord(byte[] tokenId)
@@ -1044,7 +1084,6 @@ namespace NeoGameContract
             return info;
         }
 
-        
         //将收入提款到合约拥有者
         public static bool DrawToContractOwner(BigInteger count)
         {
@@ -1240,7 +1279,6 @@ namespace NeoGameContract
         {
             if (!Runtime.CheckWitness(buyer))
             {
-                //没有签名
                 return false;
             }
             var nowtime = Blockchain.GetHeader(Blockchain.GetHeight()).Timestamp;
@@ -1278,6 +1316,231 @@ namespace NeoGameContract
 
             }
             return false;
+        }
+
+        public static bool SetElementValue(BigInteger value1, BigInteger value2, BigInteger value3, BigInteger value4, BigInteger value5, BigInteger value6, BigInteger value7, BigInteger value8, BigInteger value9, BigInteger value10)
+        {
+            ElementValue elementValue = new ElementValue();
+            elementValue.thunder = value1;
+            elementValue.water = value2;
+            elementValue.fire = value3;
+            elementValue.light = value4;
+            elementValue.dark = value5;
+            elementValue.element1 = value6;
+            elementValue.element2 = value7;
+            elementValue.element3 = value8;
+            elementValue.element4 = value9;
+            elementValue.element5 = value10;
+
+            byte[] elementValueByte = Helper.Serialize(elementValue);
+
+            Storage.Put(Storage.CurrentContext, "ElementValue", elementValueByte);
+            return true;
+        }
+        public static ElementValue GetElementValue()
+        {
+            object[] result;
+            byte[] v = Storage.Get(Storage.CurrentContext, "ElementValue");
+            if (v.Length == 0)
+                result = new object[0];
+            result = (object[])Helper.Deserialize(v);
+            ElementValue value = (ElementValue)(object)result;
+            return value;
+        }
+
+        private static object[] GetElementValueObject()
+        {
+            object[] result;
+            byte[] v = Storage.Get(Storage.CurrentContext, "ElementValue");
+            if (v.Length == 0)
+                result = new object[0];
+            result = (object[])Helper.Deserialize(v);
+            return result;
+        }
+
+        public static bool BuyElement(byte[] buyer, int amount1, int amount2, int amount3, int amount4, int amount5, int amount6, int amount7, int amount8, int amount9, int amount10)
+        {
+            if (!Runtime.CheckWitness(buyer))
+            {
+                //没有签名
+                return false;
+            }
+            var nowtime = Blockchain.GetHeader(Blockchain.GetHeight()).Timestamp;
+
+            BigInteger buyerMoney = Storage.Get(Storage.CurrentContext, buyer).AsBigInteger();
+
+            object[] elementValueObject = GetElementValueObject();
+            if (elementValueObject.Length > 0)
+            {
+                ElementValue elementValue = (ElementValue)(object)elementValueObject;
+                BigInteger allValue = 0;
+                if (elementValue.thunder > 0)
+                {
+                    allValue += elementValue.thunder * amount1;
+                }
+                else
+                {
+                    amount1 = 0;
+                }
+                if (elementValue.water > 0)
+                {
+                    allValue += elementValue.water * amount2;
+                }
+                else
+                {
+                    amount2 = 0;
+                }
+                if (elementValue.fire > 0)
+                {
+                    allValue += elementValue.fire * amount3;
+                }
+                else
+                {
+                    amount3 = 0;
+                }
+                if (elementValue.light > 0)
+                {
+                    allValue += elementValue.light * amount4;
+                }
+                else
+                {
+                    amount4 = 0;
+                }
+                if (elementValue.dark > 0)
+                {
+                    allValue += elementValue.dark * amount5;
+                }
+                else
+                {
+                    amount5 = 0;
+                }
+                if (elementValue.element1 > 0)
+                {
+                    allValue += elementValue.element1 * amount6;
+                }
+                else
+                {
+                    amount6 = 0;
+                }
+                if (elementValue.element2 > 0)
+                {
+                    allValue += elementValue.element2 * amount7;
+                }
+                else
+                {
+                    amount7 = 0;
+                }
+                if (elementValue.element3 > 0)
+                {
+                    allValue += elementValue.element3 * amount8;
+                }
+                else
+                {
+                    amount8 = 0;
+                }
+                if (elementValue.element4 > 0)
+                {
+                    allValue += elementValue.element4 * amount9;
+                }
+                else
+                {
+                    amount9 = 0;
+                }
+                if (elementValue.element5 > 0)
+                {
+                    allValue += elementValue.element5 * amount10;
+                }
+                else
+                {
+                    amount10 = 0;
+                }
+                if (buyerMoney < allValue)
+                {
+                    return false;
+                }
+
+                // 扣钱 买票
+                Storage.Put(Storage.CurrentContext, buyer, buyerMoney - allValue);
+                //减掉所有存的钱
+                _subTotal(allValue);
+
+                //给买家 票
+                object[] elementInfoObject = GetElementInfoObject(buyer);
+                if (elementInfoObject.Length > 0)
+                {
+                    ElementInfo elementInfo = (ElementInfo)(object)elementInfoObject;
+                    elementInfo.thunder += amount1;
+                    elementInfo.water += amount2;
+                    elementInfo.fire += amount3;
+                    elementInfo.light += amount4;
+                    elementInfo.dark += amount5;
+                    elementInfo.element1 += amount6;
+                    elementInfo.element2 += amount7;
+                    elementInfo.element3 += amount8;
+                    elementInfo.element4 += amount9;
+                    elementInfo.element5 += amount10;
+
+                    SetElementInfo(buyer, elementInfo.thunder, elementInfo.water, elementInfo.fire, elementInfo.light, elementInfo.dark, elementInfo.element1, elementInfo.element2, elementInfo.element3, elementInfo.element4, elementInfo.element5);
+                }
+                else
+                {
+                    SetElementInfo(buyer, amount1, amount2, amount3, amount4, amount5, amount6, amount7, amount8, amount9, amount10);
+                }
+
+
+                BuyElemented(buyer, amount1, amount2, amount3, amount4, amount5, amount6, amount7, amount8, amount9, amount10);
+                return true;
+            }
+
+            return false;
+        }
+
+        public static bool UseElement(byte[] buyer, int amount1, int amount2, int amount3, int amount4, int amount5, int amount6, int amount7, int amount8, int amount9, int amount10)
+        {
+            if (!Runtime.CheckWitness(buyer))
+            {
+                //没有签名
+                return false;
+            }
+            var nowtime = Blockchain.GetHeader(Blockchain.GetHeight()).Timestamp;
+
+            if (amount1 < 0 || amount2 < 0 || amount3 < 0 || amount4 < 0 || amount5 < 0 || amount6 < 0 || amount7 < 0 || amount8 < 0 || amount9 < 0 || amount10 < 0)
+            {
+                return false;
+            }
+
+            object[] elementInfoObject = GetElementInfoObject(buyer);
+            if (elementInfoObject.Length > 0)
+            {
+                ElementInfo elementInfo = (ElementInfo)(object)elementInfoObject;
+
+                if (elementInfo.thunder < amount1 || elementInfo.water < amount2 || elementInfo.fire < amount3 || elementInfo.light < amount4 || elementInfo.dark < amount5 || elementInfo.element1 < amount6 || elementInfo.element2 < amount7 || elementInfo.element3 < amount8 || elementInfo.element4 < amount9 || elementInfo.element5 < amount10)
+                {
+                    elementInfo.thunder -= amount1;
+                    elementInfo.water -= amount2;
+                    elementInfo.fire -= amount3;
+                    elementInfo.light -= amount4;
+                    elementInfo.dark -= amount5;
+                    elementInfo.element1 -= amount6;
+                    elementInfo.element2 -= amount7;
+                    elementInfo.element3 -= amount8;
+                    elementInfo.element4 -= amount9;
+                    elementInfo.element5 -= amount10;
+
+                    SetElementInfo(buyer, elementInfo.thunder, elementInfo.water, elementInfo.fire, elementInfo.light, elementInfo.dark, elementInfo.element1, elementInfo.element2, elementInfo.element3, elementInfo.element4, elementInfo.element5);
+
+                    UseElemented(buyer, amount1, amount2, amount3, amount4, amount5, amount6, amount7, amount8, amount9, amount10);
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                return false;
+            }
         }
     }
 }
