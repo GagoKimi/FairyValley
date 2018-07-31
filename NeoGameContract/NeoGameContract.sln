@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27703.2000
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeoGameContract", "NeoGameContract\NeoGameContract.csproj", "{D1A1C33D-6961-4432-BA78-9D4F9659B495}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D1A1C33D-6961-4432-BA78-9D4F9659B495}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D1A1C33D-6961-4432-BA78-9D4F9659B495}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D1A1C33D-6961-4432-BA78-9D4F9659B495}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D1A1C33D-6961-4432-BA78-9D4F9659B495}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E114C6EA-66F9-4DA9-A9E4-B6D9C82517FE}
+	EndGlobalSection
+EndGlobal
